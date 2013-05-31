@@ -1,3 +1,5 @@
+All software in this package is covered by the MIT license
+
 Copyright (c) 2013 Lutsko Dmitriy
 
 MIT License

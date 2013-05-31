@@ -1,12 +1,12 @@
-# JeapiePushMessage
+# Jeapie
 
-TODO: Write a gem description
+This is wrapper for RESTFull API http://jeapie.com
+It allow send push notification to your Android and Apple devices
 
 ## Installation
-
 Add this line to your application's Gemfile:
 
-    gem 'jeapie_push_message'
+    $ gem 'jeapie'
 
 And then execute:
 
@@ -14,11 +14,34 @@ And then execute:
 
 Or install it yourself as:
 
-    $ gem install jeapie_push_message
+    $ gem install jeapie
 
 ## Usage
+```ruby
+require 'jeapie'
+```
 
-TODO: Write usage instructions here
+To send with the very minimum amount of information.
+
+```ruby
+Jeapie.notify(message: 'message', title: 'title', user: 'USER_TOKEN', token: 'APP_TOKEN')
+```
+
+Optional you can place in /config/application.rb
+```ruby
+Jeapie.configure do |config|
+  config.user='USER_TOKEN' # you can take from http://dashboard.jeapie.com
+  config.token='APP_TOKEN'
+  config.device='Nexus7' #optional
+  config.priority=0 #or 1(high) or -1(low, not sound when receive). By default is 0
+end
+
+Jeapie.notify(message: 'message', title: 'title')
+#or just
+Jeapie.notify(message: 'message')
+```
+Method `notify` return true or false. If it return false you can check `Jeapie.errors` for error message.
+Or you can use method `notify!`, it raise exception if something going wrong.
 
 ## Contributing
 

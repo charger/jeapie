@@ -1,7 +1,9 @@
 require 'net/https'
-require 'jeapie_push_message/version'
+require 'jeapie/version'
+require 'active_support/core_ext/object/blank'
+require 'active_support/json'
 
-module JeapiePushMessage
+module Jeapie
   class DeliverException < StandardError ; end
   extend self
   # app_token and user_key, you can get it from dashboard.jeapie.com
@@ -13,6 +15,7 @@ module JeapiePushMessage
   PRIORITY_LOW=-1
   PRIORITY_MED=0
   PRIORITY_HIGH=1
+  MESSAGE_MAX_LEN= 2000
 
   def configure
     yield self
@@ -22,7 +25,7 @@ module JeapiePushMessage
   # available parameters and his values
   def parameters
     h = {}
-    keys.each { |k| h[k.to_sym] = JeapiePushMessage.instance_variable_get("@#{k}") }
+    keys.each { |k| h[k.to_sym] = Jeapie.instance_variable_get("@#{k}") }
     h
   end
   alias_method :params, :parameters
@@ -31,10 +34,17 @@ module JeapiePushMessage
     @keys||= [:token, :user, :message, :title, :device, :priority]
   end
 
+  def clear
+    keys.each do |k|
+      Jeapie.instance_variable_set("@#{k}", nil)
+    end
+  end
+
   def errors
+    return "Params not valid: #{@params_errors}" unless @params_errors && @params_errors.empty?
     return false if result.nil?
     begin
-    arr=JSON::parse(result.body)
+    arr= JSON::parse(result.body)
     rescue JSON::ParserError
       return "Can't parse response: #{result.body}"
     end
@@ -49,8 +59,9 @@ module JeapiePushMessage
   # @return [String] the response from jeapie.com, in json.
   def notify(opts={message:''})
     data = params.merge(opts).select { |_, v| v != nil }
+    return false unless params_errors(data).empty?
     url = URI.parse(API_URL)
-    req = Net::HTTP::Post.new(url.path, {'User-Agent' => "Ruby jeapie gem: #{JeapiePushMessage::VERSION}"})
+    req = Net::HTTP::Post.new(url.path, {'User-Agent' => "Ruby jeapie gem: #{Jeapie::VERSION}"})
     req.set_form_data(data)
 
     res = Net::HTTP.new(url.host, url.port)
@@ -62,5 +73,20 @@ module JeapiePushMessage
 
   def notify!(opts={message:''})
     raise DeliverException, errors unless notify(opts)
+    true
   end
+
+  protected
+  def params_errors(params)
+    @params_errors=[]
+    @params_errors<<'Token cannot be blank' if params[:token].blank?
+    @params_errors<<'Token must be 32 symbols' if params[:token].size != 32
+    @params_errors<<'User cannot be blank' if params[:user].blank?
+    @params_errors<<'User must be 32 symbols' if params[:user].size != 32
+    @params_errors<<'Message cannot be blank' if params[:message].blank?
+    @params_errors<<"Message too long, max: #{MESSAGE_MAX_LEN}" if params[:message] && params[:message].size > MESSAGE_MAX_LEN
+    @params_errors
+  end
+
+
 end
