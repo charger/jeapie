@@ -3,12 +3,14 @@ require 'jeapie/version'
 require 'active_support/core_ext/object/blank'
 require 'active_support/json'
 
+# The primary namespace.
 module Jeapie
   class DeliverException < StandardError ; end
   extend self
   # app_token and user_key, you can get it from dashboard.jeapie.com
   attr_accessor :token, :user
   attr_accessor :message, :title, :device, :priority
+  # After call notify it contain result as {Net::HTTPCreated} object, for check result better see {#errors}
   attr_reader :result
 
   API_URL= 'https://api.jeapie.com/v1/send/message.json'
@@ -30,16 +32,20 @@ module Jeapie
   end
   alias_method :params, :parameters
 
+  # List of available fields, useful for unit test.
+  # @return Hash
   def keys
     @keys||= [:token, :user, :message, :title, :device, :priority]
   end
 
+  # Clear stored params, useful for unit tests.
   def clear
     keys.each do |k|
       Jeapie.instance_variable_set("@#{k}", nil)
     end
   end
 
+  # After call {#notify} it contain "false" if all OK, or [string] with error in other case.
   def errors
     return "Params not valid: #{@params_errors}" unless @params_errors && @params_errors.empty?
     return false if result.nil?
@@ -53,10 +59,14 @@ module Jeapie
     "code: #{result.code}, errors: #{arr['errors']}"
   end
 
-  # push a message to Jeapie
-  # example: notify message:'Backup complete'
-  # or: notify title:'Backup complete', message:'Time elapsed 50s, size: 500Mb', priority:-1, device:'Nexus7', user:'', token:''
-  # @return [String] the response from jeapie.com, in json.
+  # Send message to Jeapie.
+  # example:
+  #  notify message:'Backup complete'
+  # or:
+  #  notify title:'Backup complete', message:'Time elapsed 50s, size: 500Mb', priority:-1, device:'Nexus7', user:'', token:''
+  #
+  # If this method return +false+, you can check {#errors} for text, or you can use {#notify!} for raise +DeliverException+ if any problem
+  # @return [true, false]
   def notify(opts={message:''})
     data = params.merge(opts).select { |_, v| v != nil }
     return false unless params_errors(data).empty?
@@ -71,6 +81,7 @@ module Jeapie
     errors ? false : true
   end
 
+  # @return [true]
   def notify!(opts={message:''})
     raise DeliverException, errors unless notify(opts)
     true

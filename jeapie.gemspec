@@ -20,4 +20,10 @@ Gem::Specification.new do |gem|
 
   gem.add_dependency('activesupport')
   gem.add_development_dependency 'fakeweb', ['~> 1.3']
+
+  # documentation
+  gem.extra_rdoc_files = Dir.glob('*.md')
+  gem.rdoc_options = %w(--line-numbers --inline-source --no-private --protected --title Jeapie --main README.md --encoding=UTF-8)
+  gem.has_rdoc = 'yard'
+
 end
