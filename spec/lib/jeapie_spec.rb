@@ -5,12 +5,10 @@ describe Jeapie do
   before(:each) do
     Jeapie.clear
     Jeapie.configure do |c|
-      c.user='qwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqw'
       c.token='asasasasasasasasasasasasasasasas'
     end
     FakeWeb.clean_registry
   end
-  let(:api_url){Jeapie::API_URL}
   let(:api_ok_answer){'{"success":true,"message":"Message was sent successfully"}'}
   let(:api_fail_answer){'{"success":false,"errors":{"device":["Some error"]}}'}
 
@@ -28,7 +26,7 @@ describe Jeapie do
 
   describe '#parameters' do
     it 'should return all params' do
-      p={token:'1', user:'2', message:'3', title:'4', device:'5', priority:'6'}
+      p={token:'1', message:'3', title:'4', device:'5', priority:'6'}
       p.each do |k,v|
         Jeapie.send "#{k}=", v
       end
@@ -38,7 +36,7 @@ describe Jeapie do
 
   describe '#notify' do
     subject{ Jeapie.notify(params) }
-
+    let(:api_url){Jeapie::NOTIFY_API_URL}
 
     context 'when all params OK' do
       let(:params){ {message:'Text'} }
@@ -78,5 +76,45 @@ describe Jeapie do
     end
   end
 
+  describe '#notify_multiple' do
+    subject{ Jeapie.notify_multiple(params) }
+    let(:api_url){Jeapie::NOTIFY_MULTIPLE_API_URL}
+    before(:each){FakeWeb.register_uri(:post, api_url, :body => api_ok_answer) }
+    context 'when "emails" as array' do
+      let(:params){ {message:'Test message', emails: %w(user1@mail.com user2@mail.com)} }
+      it 'should send "emails" as string' do
+        subject.should be_true
+        FakeWeb.last_request.body.should include CGI.escape('user1@mail.com,user2@mail.com')
+      end
+    end
+    context 'when "emails" as string with spaces' do
+      let(:params){ {message:'Test message', emails: 'user1@mail.com , user2@mail.com'} }
+      it 'should send "emails" as is as' do
+        subject.should be_true
+        FakeWeb.last_request.body.should include CGI.escape('user1@mail.com , user2@mail.com')
+      end
+    end
+    context 'when "emails" is empty' do
+      let(:params){ {message:'Test message', emails: ''} }
+      it 'should return "false" and "errors" must contain info about error' do
+        subject.should be_false
+        Jeapie.errors.should match /Params not valid:/
+        FakeWeb.should_not have_requested(:post, api_url)
+      end
+    end
+  end
+
+  describe '#notify_all' do
+    context 'when all params "OK" and when server return "OK"' do
+      subject{ Jeapie.notify_all(params) }
+      let(:api_url){Jeapie::NOTIFY_ALL_API_URL}
+      let(:params){ {message:'Text'} }
+      before(:each){FakeWeb.register_uri(:post, api_url, :body => api_ok_answer) }
+      it 'should return "true"' do
+        subject.should be_true
+        FakeWeb.should have_requested(:post, api_url)
+      end
+    end
+  end
 
 end

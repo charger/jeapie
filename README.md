@@ -6,7 +6,7 @@ It allow send push notification to your Android and Apple devices
 ## Installation
 Add this line to your application's Gemfile:
 
-    $ gem 'jeapie'
+    $ gem 'jeapie', '~> 0.2'
 
 And then execute:
 
@@ -17,6 +17,7 @@ Or install it yourself as:
     $ gem install jeapie
 
 ## Usage
+optional:
 ```ruby
 require 'jeapie'
 ```
@@ -24,24 +25,31 @@ require 'jeapie'
 To send with the very minimum amount of information.
 
 ```ruby
-Jeapie.notify(message: 'message', title: 'title', user: 'USER_TOKEN', token: 'APP_TOKEN')
+# sending to myself
+Jeapie.notify(message: 'message', title: 'title', token: 'APP_TOKEN')
+#sending to all subscribers of your application (providers)
+Jeapie.notify_all(message: 'message', title: 'title', token: 'APP_TOKEN')
+#sending to some subscribers of your application
+Jeapie.notify_multiple(message: 'message', title: 'title', token: 'APP_TOKEN', emails:'user1@mail.com, user2@mail.com')
 ```
 
 Optional you can place in /config/application.rb
 ```ruby
 Jeapie.configure do |config|
-  config.user='USER_TOKEN' # you can take from http://dashboard.jeapie.com
-  config.token='APP_TOKEN'
+  config.token='APP_TOKEN' # you can take from http://dashboard.jeapie.com on section "Providers"
   config.device='Nexus7' #optional
   config.priority=0 #or 1(high) or -1(low, not sound when receive). By default is 0
 end
 
-Jeapie.notify(message: 'message', title: 'title')
-#or just
 Jeapie.notify(message: 'message')
+#or
+Jeapie.notify(message: 'message', title: 'title', priority:Jeapie::PRIORITY_LOW)
 ```
 Method `notify` return true or false. If it return false you can check `Jeapie.errors` for error message.
 Or you can use method `notify!`, it raise exception if something going wrong.
+
+## Migrating from v0.1 to 0.2
+Just delete ``config.token`` from ``/config/application.rb``
 
 ## Contributing
 
